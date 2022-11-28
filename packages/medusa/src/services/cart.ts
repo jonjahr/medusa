@@ -680,7 +680,8 @@ class CartService extends TransactionBaseService {
   }
 
   /**
-   * Adds one or multiple line items to the cart.
+   * Adds or update one or multiple line items to the cart. It also update all existing items in the cart
+   * to have has_shipping to false. Finally, the adjustments will be updated.
    * @param cartId - the id of the cart that we will add to
    * @param lineItems - the line items to add.
    * @param config
