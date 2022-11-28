@@ -15,6 +15,7 @@ export default class CacheService implements ICacheService {
     data: Record<string, unknown>,
     ttl: number = DEFAULT_CACHE_TIME
   ): Promise<void> {
+    ttl = process.env.NODE_ENV?.startsWith("test") ? 0 : ttl
     await this.redis_.set(key, JSON.stringify(data), "EX", ttl)
   }
 
