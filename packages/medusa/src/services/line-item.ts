@@ -243,18 +243,18 @@ class LineItemService extends TransactionBaseService {
         )
 
         const variantsMap = new Map<string, ProductVariant>()
-        const variantsToCalculatePricing: ProductVariant[] = []
+        const variantIdsToCalculatePricingFor: string[] = []
 
         for (const variant of variants) {
           variantsMap.set(variant.id, variant)
           if (resolvedContext.unit_price == null) {
-            variantsToCalculatePricing.push(variant)
+            variantIdsToCalculatePricingFor.push(variant.id)
           }
         }
 
         const variantsPricing = await this.pricingService_
           .withTransaction(transactionManager)
-          .getProductVariantsPricing(variantsToCalculatePricing, {
+          .getProductVariantsPricing(variantIdsToCalculatePricingFor, {
             region_id: regionId,
             quantity: quantity,
             customer_id: context?.customer_id,
@@ -267,13 +267,14 @@ class LineItemService extends TransactionBaseService {
           const variant = variantsMap.get(
             variantData.variantId
           ) as ProductVariant
+          const variantPricing = variantsPricing[variantData.variantId]
 
           const lineItem = await this.generateLineItem(
             variant,
             variantData.quantity,
             {
               ...resolvedContext,
-              variantsPricing,
+              variantPricing,
             }
           )
 
@@ -309,7 +310,7 @@ class LineItemService extends TransactionBaseService {
     },
     quantity: number,
     context: GenerateLineItemContext & {
-      variantsPricing: { [variantId: string]: ProductVariantPricing }
+      variantPricing: ProductVariantPricing
     }
   ): Promise<LineItem> {
     const transactionManager = this.transactionManager_ ?? this.manager_
@@ -320,10 +321,10 @@ class LineItemService extends TransactionBaseService {
 
     if (context.unit_price == null) {
       shouldMerge = true
-      const variantPricing = context.variantsPricing[variant.id] ?? {}
 
-      unitPriceIncludesTax = !!variantPricing?.calculated_price_includes_tax
-      unit_price = variantPricing?.calculated_price ?? undefined
+      unitPriceIncludesTax =
+        !!context.variantPricing?.calculated_price_includes_tax
+      unit_price = context.variantPricing?.calculated_price ?? undefined
     }
 
     const rawLineItem: Partial<LineItem> = {
